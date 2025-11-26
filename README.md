@@ -84,6 +84,22 @@ sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
 df -h
 ```
 
+### Set up folder structure
+
+Do not clutter your system folders. Keep everything inside your home directory or a dedicated /data folder. Since we are keeping it simple, let's use your home folder.
+
+```sh
+$ mkdir -p ~/server-data/{torrents,media/{movies,shows}}
+
+# sudo apt install tree
+$ tree ~/server-data
+/home/serveradmin/server-data/
+├── torrents/       <-- qBittorrent dumps files here
+└── media/          <-- Jellyfin watches this
+    ├── movies/     <-- You move clean movie files here
+    └── shows/      <-- You move clean TV show files here
+```
+
 ## Tailscale
 
 ```sh
@@ -124,24 +140,47 @@ cd my-server
 nano docker-compose.yml
 ```
 
+Add qBittorrent to your `docker-compose.yml`. It has a great Web UI that allows you to upload .torrent files or paste "Magnet Links" from your phone/tablet.
+
 ```yml
 services:
-  immich-server:
-    image: ghcr.io/immich-app/immich-server:release
-    # ... (standard immich config lines) ...
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000   # Critical: Ensures it has permission to write to your folders
+      - PGUID=1000
+      - TZ=Etc/UTC  # Change to your timezone if you want (e.g., Europe/Prague)
+      - WEBUI_PORT=8080
+    volumes:
+      - ./qbittorrent_config:/config
+      - ~/server-data/torrents:/downloads  # Maps the "torrents" folder
     ports:
-      # BINDING TO TAILSCALE IP ONLY
-      - "100.x.y.z:2283:3001" 
-      # Format is "IP:HostPort:ContainerPort"
-      # If you just put "2283:3001", it exposes it to your whole LAN. 
-      # By adding the IP, ONLY Tailscale devices can see it.
+      - "100.x.y.z:8080:8080" # Web UI (Tailscale only)
+      - "6881:6881"           # Torrent traffic (TCP) - Needs to be public!
+      - "6881:6881/udp"       # Torrent traffic (UDP) - Needs to be public!
+    restart: unless-stopped
 
   jellyfin:
     image: jellyfin/jellyfin
-    network_mode: host # Jellyfin often needs host mode for DLNA/casting.
-    # If using host mode, you must use UFW firewall (see below) 
-    # because host mode ignores port bindings.
+    container_name: jellyfin
+    network_mode: "host"
+    volumes:
+      - ./jellyfin_config:/config
+      - ./jellyfin_cache:/cache
+      # UPDATE THIS LINE TO MATCH NEW STRUCTURE:
+      - ~/server-data/media:/media
+    restart: 'unless-stopped'
 ```
+
+Apply the changes:
+
+```sh
+cd ~/my-server
+docker compose up -d
+```
+
+To change qBitorrent credentials, check current `admin` password from `docker log qbittorrent` and then in qBittorrent UI go to Tools > Options > Web UI > Authentication.
 
 ## Adjust firewall
 
