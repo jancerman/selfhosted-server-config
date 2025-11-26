@@ -63,6 +63,27 @@ Apply anf turn off screen:
 sudo systemctl restart systemd-logind
 ```
 
+### Expand logical volume
+
+Ubuntu Serveer uses LVM (Logical Volume Manager). By default, it reserves half the disk space "just in case" you want to create a separate partition later. Since you are hosting a simple media server, you don't need this reservation.
+
+```sh
+# Check current state, look for /
+df -h
+
+# Expand the logical volume (LV)
+# This tells LVM: "Take the ubuntu-lv volume and add 100% of the remaining free space to it".
+sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+
+# Resize the filesystem
+# This tells the actual filesystem: "The container you live in just got bigger, please expand to fill the room".
+sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+
+# Verify size
+# / should now show a different size
+df -h
+```
+
 ## Tailscale
 
 ```sh
