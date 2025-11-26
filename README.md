@@ -100,7 +100,41 @@ $ tree ~/server-data
     └── shows/      <-- You move clean TV show files here
 ```
 
-## Tailscale
+### Set up file manager
+
+Install Midnight Commander:
+
+```sh
+sudo apt install -y mc
+```
+
+Install helper drivers for exFAT and NTFS drives:
+
+```sh
+sudo apt install -y exfat-fuse ntfs-3g
+```
+
+Add "Mount" option to F2 menu in Midnight Commander:
+
+1. Open `mc`.
+2. Press **F9** (Menu) > **Command** > **Edit menu file** > **User**.
+3. Using `nano`, add these lines to the bottom of the file (CTRL + V):
+
+   ```toml
+    + t t
+    m       Mount USB (udisks)
+            read -p "Partition (e.g. sdb1): " part
+            udisksctl mount -b /dev/$part
+    
+    u       Unmount USB (udisks)
+            read -p "Partition (e.g. sdb1): " part
+            udisksctl unmount -b /dev/$part
+   ```
+4. Save and exit using CTRL + O, Enter, CTRL + X.
+
+When you are in `mc`, press **F2** and press **m**. It will ask you for the partition (like `sdb1`) and mount it for you instantly.
+
+## Set up Tailscale
 
 ```sh
 # Install Tailscale
@@ -116,7 +150,7 @@ tailscale ip -4
 
 In the Tailscale Admin Console in your browser, for the new server machine, disable ke expiry. If not done, the server disconnects from Tailscale in 90 days.
 
-## Docker
+## Set up Docker
 
 ```sh
 # Install Docker using automatic installer script
@@ -185,10 +219,14 @@ To change qBitorrent credentials, check current `admin` password from `docker lo
 ## Adjust firewall
 
 ```sh
-# Allow EVERYTHING from Tailscale
+# Allow everything from Tailscale
 sudo ufw allow in on tailscale0
-# Keep SSH open just in case
+# Keep SSH open, just in case
 sudo ufw allow ssh
-# Turn firewall on. This effectively blocks external access to Jellyfin unless it's coming through the Tailscale tunnel
+# Allow any traffic coming in on the lo interface. This covers IPv4 (127.0.0.1) and IPv6 (::1).
+sudo ufw allow in on lo
+# Turn on firewall
 sudo ufw enable
+# Check enabled rules
+sudo ufw status
 ```
