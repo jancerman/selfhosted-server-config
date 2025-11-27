@@ -120,16 +120,17 @@ Add "Mount" option to F2 menu in Midnight Commander:
 2. Press **F9** (Menu) > **Command** > **Edit menu file** > **User**.
 3. Using `nano`, add these lines to the bottom of the file (CTRL + V):
 
-   ```toml
-    + t t
-    m       Mount USB (udisks)
-            read -p "Partition (e.g. sdb1): " part
-            udisksctl mount -b /dev/$part
-    
-    u       Unmount USB (udisks)
-            read -p "Partition (e.g. sdb1): " part
-            udisksctl unmount -b /dev/$part
-   ```
+```toml
++ t t
+m       Mount USB (udisks)
+        read -p "Partition (e.g. sdb1): " part
+        udisksctl mount -b /dev/$part
+
+u       Unmount USB (udisks)
+        read -p "Partition (e.g. sdb1): " part
+        udisksctl unmount -b /dev/$part
+```
+
 4. Save and exit using CTRL + O, Enter, CTRL + X.
 
 When you are in `mc`, press **F2** and press **m**. It will ask you for the partition (like `sdb1`) and mount it for you instantly.
