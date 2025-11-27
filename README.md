@@ -100,7 +100,29 @@ $ tree ~/server-data
     └── shows/      <-- You move clean TV show files here
 ```
 
-### Set up file manager
+## Mounting drives
+
+```sh
+# Enumerate drives
+$ lsblk
+NAME                      MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+sda                         8:0    0 238.5G  0 disk 
+├─sda1                      8:1    0 238.4G  0 part 
+└─sda2                      8:2    0    32M  0 part 
+nvme0n1                   259:0    0 476.9G  0 disk 
+├─nvme0n1p1               259:1    0     1G  0 part /boot/efi
+├─nvme0n1p2               259:2    0     2G  0 part /boot
+└─nvme0n1p3               259:3    0 473.9G  0 part 
+  └─ubuntu--vg-ubuntu--lv 252:0    0 473.9G  0 lvm  /
+
+# Mount a specific drive
+$ udisksctl mount -b /dev/sdb1
+# Unmount a specific drive
+$ udisksctl unmount -b /dev/sdb1
+Unmounted /dev/sda1.
+```
+
+## Set up file manager
 
 Install Midnight Commander:
 
@@ -113,27 +135,6 @@ Install helper drivers for exFAT and NTFS drives:
 ```sh
 sudo apt install -y exfat-fuse ntfs-3g
 ```
-
-Add "Mount" option to F2 menu in Midnight Commander:
-
-1. Open `mc`.
-2. Press **F9** (Menu) > **Command** > **Edit menu file** > **User**.
-3. Using `nano`, add these lines to the bottom of the file (CTRL + V):
-
-```toml
-+ t t
-m       Mount USB (udisks)
-        read -p "Partition (e.g. sdb1): " part
-        udisksctl mount -b /dev/$part
-
-u       Unmount USB (udisks)
-        read -p "Partition (e.g. sdb1): " part
-        udisksctl unmount -b /dev/$part
-```
-
-4. Save and exit using CTRL + O, Enter, CTRL + X.
-
-When you are in `mc`, press **F2** and press **m**. It will ask you for the partition (like `sdb1`) and mount it for you instantly.
 
 ## Set up Tailscale
 
