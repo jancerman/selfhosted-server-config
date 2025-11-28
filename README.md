@@ -1,4 +1,6 @@
-# selfhosted-server-config
+# How I set up my local Ubuntu server
+
+On a refurbished Dell ultrabook. And you can too.
 
 ## Install Ubuntu Server
 
@@ -122,6 +124,14 @@ $ udisksctl unmount -b /dev/sdb1
 Unmounted /dev/sda1.
 ```
 
+## Set up logging
+
+For a "user-friendly" view of network traffic, CPU usage, and disk activity, use Netdata. It installs with a single command. It creates a real-time dashboard accessible via your browser. Real-time upload/download speeds, which container is eating RAM, and if your CPU is throttling.
+
+```sh
+wget -O /tmp/netdata-kickstart.sh https://my-netdata.io/kickstart.sh && sh /tmp/netdata-kickstart.sh
+```
+
 ## Set up file manager
 
 Install Midnight Commander:
@@ -136,7 +146,7 @@ Install helper drivers for exFAT and NTFS drives:
 sudo apt install -y exfat-fuse ntfs-3g
 ```
 
-## Set up Tailscale
+## Set up VPN
 
 ```sh
 # Install Tailscale
@@ -255,6 +265,21 @@ The newly set password is stored in encrypted format in `qBittorrent.conf` in th
     restart: 'unless-stopped'
 ```
 
+### Dozzle
+
+View Docker container logs live in a single interface.
+
+```yml
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "100.x.y.z:8888:8080" # Accessible at port 8888
+    restart: unless-stopped
+```
+
 ### Immich
 
-TODO
+Photo media management
