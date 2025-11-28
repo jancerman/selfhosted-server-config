@@ -152,6 +152,21 @@ tailscale ip -4
 
 In the Tailscale Admin Console in your browser, for the new server machine, disable ke expiry. If not done, the server disconnects from Tailscale in 90 days.
 
+## Set up firewall
+
+```sh
+# Allow everything from Tailscale
+sudo ufw allow in on tailscale0
+# Keep SSH open, just in case
+sudo ufw allow ssh
+# Allow any traffic coming in on the lo interface. This covers IPv4 (127.0.0.1) and IPv6 (::1).
+sudo ufw allow in on lo
+# Turn on firewall
+sudo ufw enable
+# Check enabled rules
+sudo ufw status
+```
+
 ## Set up Docker
 
 ```sh
@@ -173,30 +188,61 @@ Create `docker-compose.yml`:
 ```sh
 mkdir my-server
 cd my-server
+# Define services in the docker-compose file
 nano docker-compose.yml
+
+$ cat docker-compose.yml
+services:
+  serviceA:
+    # config
+  serviceB:
+    # config
 ```
 
-Add qBittorrent to your `docker-compose.yml`. It has a great Web UI that allows you to upload .torrent files or paste "Magnet Links" from your phone/tablet.
+Once services are configured, run `docker compose`:
+
+```
+cd ~/my-server
+docker compose up -d
+```
+
+### qBitTorrent
 
 ```yml
-services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
       - PUID=1000   # Critical: Ensures it has permission to write to your folders
       - PGUID=1000
-      - TZ=Etc/UTC  # Change to your timezone if you want (e.g., Europe/Prague)
+      - TZ=Etc/UTC  # Change to your timezone if you want
       - WEBUI_PORT=8080
     volumes:
       - ./qbittorrent_config:/config
       - ~/server-data/torrents:/downloads  # Maps the "torrents" folder
     ports:
-      - "100.x.y.z:8080:8080" # Web UI (Tailscale only)
+      - "<TailscaleServerIPv4>:8080:8080" # Web UI (Tailscale only)
       - "6881:6881"           # Torrent traffic (TCP) - Needs to be public!
       - "6881:6881/udp"       # Torrent traffic (UDP) - Needs to be public!
     restart: unless-stopped
+```
 
+#### Change user credentials
+
+On start, qBittorrent generates a unique password for the `admin` user, which must be manually set. Otherwise, it's different on each start.
+
+1. Run `docker log qbittorrent`.
+2. Find the generated admin password in the logs.
+3. In the qBittorrent web UI:
+    1. Use the password to sign in as the `admin` user.
+    2. In **Tools** > **Options** > **Web UI** > **Authentication**, change the username and password.
+    3. **Save**.
+
+The newly set password is stored in encrypted format in `qBittorrent.conf` in the `WebUI\Password_PBKDF2` key. If you forget it or mistype, stop qBittorrent using docker stop qbittorrent, delete the key from config, start the service, and then follow the steps again.
+
+### Jellyfin
+
+```yml
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
@@ -209,26 +255,6 @@ services:
     restart: 'unless-stopped'
 ```
 
-Apply the changes:
+### Immich
 
-```sh
-cd ~/my-server
-docker compose up -d
-```
-
-To change qBitorrent credentials, check current `admin` password from `docker log qbittorrent` and then in qBittorrent UI go to Tools > Options > Web UI > Authentication.
-
-## Adjust firewall
-
-```sh
-# Allow everything from Tailscale
-sudo ufw allow in on tailscale0
-# Keep SSH open, just in case
-sudo ufw allow ssh
-# Allow any traffic coming in on the lo interface. This covers IPv4 (127.0.0.1) and IPv6 (::1).
-sudo ufw allow in on lo
-# Turn on firewall
-sudo ufw enable
-# Check enabled rules
-sudo ufw status
-```
+TODO
